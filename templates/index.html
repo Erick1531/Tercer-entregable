@@ -32,14 +32,12 @@
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Estilos Glassmorphism consistentes */
         .glass-panel {
             background: rgba(14, 20, 13, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
         }
 
-        /* HACK VISUAL: Invertir colores de OpenStreetMap para modo oscuro táctico */
         .leaflet-layer,
         .leaflet-control-zoom-in,
         .leaflet-control-zoom-out,
@@ -47,26 +45,23 @@
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
         
-        /* Personalización de controles de Leaflet (Ley de Fitts: Objetivos más grandes) */
         .leaflet-control-zoom {
             border: none !important;
             box-shadow: none !important;
-            margin-bottom: 30px !important; /* Separación del borde inferior */
-            margin-right: 20px !important; /* Separación del borde derecho */
+            margin-bottom: 30px !important;
+            margin-right: 20px !important;
         }
         
         .leaflet-control-zoom a {
             background-color: var(--primary) !important;
             color: black !important;
-            border: 2px solid black !important; /* Borde más grueso para contraste */
-            border-radius: 12px !important; /* Bordes más suaves */
-            margin-bottom: 12px !important; /* Más espacio entre botones + y - */
+            border: 2px solid black !important;
+            border-radius: 12px !important;
+            margin-bottom: 12px !important;
             font-weight: 800 !important;
-            
-            /* Ley de Fitts: Aumento de tamaño a 50px (estándar táctil) */
             width: 50px !important;
             height: 50px !important;
-            line-height: 46px !important; /* Centrado vertical */
+            line-height: 46px !important;
             font-size: 24px !important;
             transition: transform 0.1s;
         }
@@ -82,6 +77,10 @@
             border-radius: 12px !important;
         }
 
+        .leaflet-popup-close-button {
+            color: white !important;
+        }
+
         .pulse-marker {
             display: block;
             width: 20px;
@@ -92,16 +91,71 @@
             animation: pulse 2s infinite;
         }
 
+        .temp-marker {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #94a3b8;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Marcador de Error (Rojo) */
+        .error-marker {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ef4444;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            animation: shake 0.5s;
+        }
+
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(175, 255, 26, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(175, 255, 26, 0); }
             100% { box-shadow: 0 0 0 0 rgba(175, 255, 26, 0); }
         }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .toast-enter {
+            transform: translate(-50%, 0) !important;
+            opacity: 1 !important;
+        }
+
+        .recording-active {
+            border-color: #ef4444 !important;
+            color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3) !important;
+        }
+        
+        .btn-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <!-- Navegación Compacta (Modo App) -->
+    <!-- Navegación -->
     <nav class="w-full z-50 p-4 border-b border-white/10 bg-[#060905]/90 backdrop-blur">
         <div class="max-w-full mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -113,7 +167,6 @@
                 </a>
             </div>
             
-            <!-- Buscador Táctico -->
             <div class="hidden md:flex flex-1 max-w-lg mx-8 relative">
                 <input type="text" placeholder="BUSCAR COORDENADAS O RUTA..." 
                        class="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-sm mono text-[#afff1a] focus:outline-none focus:border-[#afff1a] placeholder-slate-600 transition-colors">
@@ -135,109 +188,371 @@
         </div>
     </nav>
 
-    <!-- Contenedor Principal del Mapa -->
+    <!-- Mapa -->
     <main class="flex-1 relative w-full h-full">
-        
-        <!-- El Mapa -->
-        <div id="map" class="w-full h-full z-0 bg-[#1a1a1a]"></div>
+        <div id="map" class="w-full h-full z-0 bg-[#1a1a1a] cursor-crosshair"></div>
 
-        <!-- Overlay HUD (Heads-Up Display) - Elementos flotantes sobre el mapa -->
-        
-        <!-- Panel Izquierdo Superior: Info de Ruta -->
-        <div class="absolute top-4 left-4 z-[400] glass-panel p-4 rounded-xl max-w-xs hidden sm:block">
-            <h3 class="text-[#afff1a] font-bold uppercase tracking-tight mb-2 flex items-center gap-2">
-                <i class="fas fa-route"></i> Ruta Actual
-            </h3>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <span class="text-slate-400 text-xs mono">DESTINO</span>
-                    <span class="text-white font-bold text-sm">Playas de Tijuana</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <span class="text-slate-400 text-xs mono">DISTANCIA</span>
-                    <span class="text-white font-bold text-sm">12.5 KM</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400 text-xs mono">ELEVACIÓN</span>
-                    <span class="text-white font-bold text-sm">↗ 120m</span>
-                </div>
-            </div>
+        <!-- Toast -->
+        <div id="toast" class="absolute bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border border-[#afff1a]/50 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(175,255,26,0.2)] transition-all duration-500 translate-y-20 opacity-0 transform">
+            <i id="toast-icon" class="fas fa-circle-notch fa-spin text-[#afff1a]"></i>
+            <span id="toast-text" class="text-sm font-bold mono tracking-wide">PROCESANDO...</span>
         </div>
 
-        <!-- Botones de Acción Flotantes (Ley de Fitts: Grandes y accesibles) -->
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[400] flex gap-6 items-center w-full justify-center px-4">
+        <!-- Botones de Acción - Z-Index 1000 para estar siempre encima -->
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1000] flex gap-4 items-center w-full justify-center px-4">
             
-            <!-- Botón Secundario: Más grande y con icono más visible -->
-            <button class="glass-panel px-8 py-4 rounded-full text-white border-2 border-transparent hover:border-[#afff1a] hover:text-[#afff1a] transition-all flex items-center gap-3 group active:scale-95 shadow-lg backdrop-blur-xl">
-                <i class="fas fa-record-vinyl text-red-500 text-xl group-hover:animate-pulse"></i>
-                <span class="font-extrabold text-base tracking-wide">GRABAR RUTA</span>
+            <button id="btn-undo" onclick="event.stopPropagation(); undoLastPoint()" 
+                class="hidden glass-panel px-4 py-4 rounded-full text-white border-2 border-transparent hover:border-red-500 hover:text-red-500 transition-all flex items-center gap-2 shadow-lg backdrop-blur-xl fade-in-up"
+                title="Deshacer último punto">
+                <i class="fas fa-undo"></i>
+                <span class="font-bold text-xs hidden sm:inline">DESHACER</span>
+            </button>
+
+            <button id="btn-record" onclick="event.stopPropagation(); toggleRecording()" 
+                class="glass-panel px-8 py-4 rounded-full text-white border-2 border-transparent hover:border-[#afff1a] hover:text-[#afff1a] transition-all flex items-center gap-3 group active:scale-95 shadow-lg backdrop-blur-xl">
+                <i id="icon-record" class="fas fa-record-vinyl text-red-500 text-xl group-hover:animate-pulse"></i>
+                <span id="lbl-record" class="font-extrabold text-base tracking-wide">GRABAR</span>
             </button>
             
-            <!-- Botón Primario: Target masivo, sombra prominente y contraste alto -->
-            <button class="bg-[#afff1a] text-black px-10 py-5 rounded-full font-black text-lg hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_30px_rgba(175,255,26,0.5)] flex items-center gap-3 border-2 border-black">
+            <button id="btn-new-point" onclick="event.stopPropagation(); activatePointMode()" 
+                class="bg-[#afff1a] text-black px-10 py-5 rounded-full font-black text-lg hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_30px_rgba(175,255,26,0.5)] flex items-center gap-3 border-2 border-black">
                 <i class="fas fa-plus text-xl"></i> 
                 <span>NUEVO PUNTO</span>
             </button>
         </div>
-
     </main>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // Coordenadas de Tijuana
         const TIJUANA_COORDS = [32.5149, -117.0382];
 
-        // Inicializar Mapa
-        // Desactivamos el zoomControl por defecto para agregarlo manualmente en una mejor posición
         const map = L.map('map', {
             zoomControl: false, 
             attributionControl: false
         }).setView(TIJUANA_COORDS, 13);
 
-        // Capa de Mapa (OpenStreetMap)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© Rumbo Maps'
         }).addTo(map);
 
-        // Agregar controles de Zoom en la esquina inferior derecha (Fácil alcance)
-        L.control.zoom({
-            position: 'bottomright'
-        }).addTo(map);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Icono personalizado para el usuario (Estilo Neón)
-        const neonIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: "<div class='pulse-marker'></div>",
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
+        // Variables de Estado
+        let tempMarker = null;
+        let isRecording = false; 
+        let routePolyline = null;
+        let routePath = []; 
+        let routeMarkers = []; 
+        let ghostLine = null;
+        let activeRoutePopup = null; 
+
+        // Iconos
+        const iconSaved = L.divIcon({ className: 'custom-div-icon', html: "<div class='pulse-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
+        const iconTemp = L.divIcon({ className: 'custom-div-icon', html: "<div class='temp-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
+        const iconError = L.divIcon({ className: 'custom-div-icon', html: "<div class='error-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
+        const iconLoading = L.divIcon({ className: 'custom-div-icon', html: "<div class='animate-spin h-6 w-6 border-4 border-[#afff1a] border-t-transparent rounded-full'></div>", iconSize: [24, 24], iconAnchor: [12, 12] });
+
+        // --- SIMULACIÓN DE API ---
+        function simulateNetworkRequest() {
+            return new Promise((resolve, reject) => {
+                const isSuccess = Math.random() > 0.5; // 50% de probabilidad de error
+                setTimeout(() => {
+                    if (isSuccess) resolve({ status: 'success' });
+                    else reject({ status: 'error', message: 'Sin conexión' });
+                }, 1500);
+            });
+        }
+
+        // Movimiento del Mouse (Rubber Banding)
+        map.on('mousemove', function(e) {
+            if (isRecording && routePath.length > 0) {
+                const lastPoint = routePath[routePath.length - 1];
+                const currentMousePos = e.latlng;
+
+                if (!ghostLine) {
+                    ghostLine = L.polyline([lastPoint, currentMousePos], {
+                        color: '#afff1a',
+                        weight: 2,
+                        opacity: 0.5,
+                        dashArray: '5, 10',
+                        interactive: false 
+                    }).addTo(map);
+                } else {
+                    ghostLine.setLatLngs([lastPoint, currentMousePos]);
+                }
+            }
         });
 
-        // Marcador en el centro (Tijuana)
-        const marker = L.marker(TIJUANA_COORDS, { icon: neonIcon }).addTo(map);
+        // Click en Mapa
+        map.on('click', function(e) {
+            const { lat, lng } = e.latlng;
 
-        // Popup estilizado
-        marker.bindPopup(`
-            <div class="text-center">
-                <h3 class="font-bold text-[#afff1a] mb-1">POSICIÓN ACTUAL</h3>
-                <p class="text-xs text-slate-300">Tijuana, Centro.</p>
-                <div class="mt-2 text-[10px] font-mono bg-white/10 rounded px-2 py-1">ONLINE</div>
-            </div>
-        `).openPopup();
+            if (isRecording) {
+                routePath.push([lat, lng]);
 
-        // Agregar algunos marcadores dummy de "Puntos de Interés" cercanos
-        const poiIcon = L.divIcon({
-            html: '<i class="fas fa-map-pin text-[#afff1a] text-2xl drop-shadow-lg"></i>',
-            className: 'bg-transparent',
-            iconSize: [24, 24],
-            iconAnchor: [12, 24]
+                if (!routePolyline) {
+                    routePolyline = L.polyline(routePath, {
+                        color: '#afff1a',
+                        weight: 4,
+                        opacity: 1,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                        interactive: false 
+                    }).addTo(map);
+                } else {
+                    routePolyline.setLatLngs(routePath);
+                }
+
+                const dot = L.circleMarker([lat, lng], {
+                    radius: 4, color: '#000', weight: 1, fillColor: '#afff1a', fillOpacity: 1, interactive: false 
+                }).addTo(map);
+                routeMarkers.push(dot);
+                return; 
+            }
+
+            if (tempMarker) map.removeLayer(tempMarker);
+            tempMarker = L.marker([lat, lng], { icon: iconTemp }).addTo(map);
+            showPointPopup(lat, lng);
         });
 
-        L.marker([32.53, -117.02], {icon: poiIcon}).addTo(map).bindPopup("Ruta Senderismo: Cerro Colorado");
-        L.marker([32.51, -117.08], {icon: poiIcon}).addTo(map).bindPopup("Punto Seguro: Zona Rio");
+        // --- FUNCIONES DE GRABACIÓN ---
 
+        function toggleRecording() {
+            const btn = document.getElementById('btn-record');
+            const label = document.getElementById('lbl-record');
+            const icon = document.getElementById('icon-record');
+            const btnUndo = document.getElementById('btn-undo');
+
+            if (!isRecording) {
+                // INICIAR
+                isRecording = true;
+                routePath = []; 
+                routeMarkers.forEach(m => map.removeLayer(m));
+                if (routePolyline) map.removeLayer(routePolyline);
+                routePolyline = null;
+                routeMarkers = [];
+
+                btn.classList.add('recording-active');
+                label.innerText = "TERMINAR";
+                icon.classList.remove('text-red-500'); 
+                icon.classList.add('text-white', 'animate-ping');
+                btnUndo.classList.remove('hidden');
+
+                showToast('GRABANDO: CLIC PARA TRAZAR', 'loading');
+                if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+
+            } else {
+                // DETENER
+                if (routePath.length < 2) {
+                    showToast('ERROR: RUTA MUY CORTA', 'error');
+                    cancelRoute();
+                    return;
+                }
+                
+                isRecording = false; 
+                if (ghostLine) { map.removeLayer(ghostLine); ghostLine = null; }
+
+                btn.classList.remove('recording-active');
+                btn.classList.add('btn-disabled'); 
+                label.innerText = "ESPERANDO...";
+                icon.classList.remove('animate-ping');
+                btnUndo.classList.add('hidden');
+
+                showRouteConfirmPopup();
+            }
+        }
+
+        function showRouteConfirmPopup() {
+            const lastPoint = routePath[routePath.length - 1];
+            const popupContent = `
+                <div class="text-center p-1 font-sans">
+                    <p class="text-sm font-bold text-white mb-3">¿Guardar Ruta?</p>
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="confirmRouteSave()" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:bg-white hover:scale-105 transition-all shadow-[0_0_10px_rgba(175,255,26,0.3)]">GUARDAR</button>
+                        <button onclick="cancelRoute()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10 transition-colors">BORRAR</button>
+                    </div>
+                </div>
+            `;
+
+            activeRoutePopup = L.popup()
+                .setLatLng(lastPoint)
+                .setContent(popupContent)
+                .openOn(map);
+
+            activeRoutePopup.on('remove', function() {
+                setTimeout(() => {
+                    // Si no estamos grabando y la ruta sigue ahí (no confirmada ni borrada)
+                    // Permitimos reabrir el popup o reintentar
+                    if(routePolyline) { 
+                        // El botón sigue disabled si no hacemos nada, asi que lo reseteamos si se cerró "a la mala"
+                        // Pero idealmente queremos que el usuario decida.
+                        // Para esta demo, si cierran el popup, asumimos que quieren pensar, habilitamos el botón de nuevo.
+                        resetRecordButtonState();
+                    }
+                }, 100);
+            });
+        }
+
+        function resetRecordButtonState() {
+            const btn = document.getElementById('btn-record');
+            const label = document.getElementById('lbl-record');
+            const icon = document.getElementById('icon-record');
+            
+            btn.classList.remove('btn-disabled'); 
+            btn.classList.remove('recording-active');
+            label.innerText = "GRABAR";
+            icon.classList.remove('text-white', 'animate-ping');
+            icon.classList.add('text-red-500');
+        }
+
+        function undoLastPoint() {
+            if (!isRecording || routePath.length === 0) return;
+            routePath.pop();
+            const lastMarker = routeMarkers.pop();
+            if (lastMarker) map.removeLayer(lastMarker);
+            if (routePolyline) routePolyline.setLatLngs(routePath);
+            if (routePath.length === 0 && ghostLine) { map.removeLayer(ghostLine); ghostLine = null; }
+        }
+
+        function confirmRouteSave() {
+            if(activeRoutePopup) { map.closePopup(); activeRoutePopup = null; }
+            
+            if (routePolyline) routePolyline.setStyle({ color: '#94a3b8', dashArray: '5, 10' }); // Estado "Cargando"
+            showToast('GUARDANDO RUTA...', 'loading');
+
+            simulateNetworkRequest()
+                .then(() => {
+                    // ÉXITO
+                    if (routePolyline) routePolyline.setStyle({ color: '#afff1a', opacity: 1, weight: 5, dashArray: null });
+                    showToast('RUTA GUARDADA', 'success');
+                    if (routePath.length > 0) {
+                        L.popup().setLatLng(routePath[Math.floor(routePath.length / 2)]).setContent('<div class="text-center"><h3 class="font-bold text-[#afff1a]">NUEVA RUTA</h3><div class="text-[10px] mono">SINCRONIZADA</div></div>').openOn(map);
+                    }
+                    resetRecordButtonState();
+                })
+                .catch(() => {
+                    // ERROR
+                    if (routePolyline) routePolyline.setStyle({ color: '#ef4444', dashArray: '5, 5' }); // Estado "Error" (Rojo punteado)
+                    showToast('ERROR DE RED: REINTENTAR', 'error');
+                    
+                    // REABRIR POPUP PARA REINTENTAR
+                    setTimeout(() => {
+                         showRouteConfirmPopup();
+                    }, 1000);
+                });
+        }
+
+        function cancelRoute() {
+            if(activeRoutePopup) { map.closePopup(); activeRoutePopup = null; }
+            
+            if (routePolyline) map.removeLayer(routePolyline);
+            routeMarkers.forEach(m => map.removeLayer(m));
+            routePath = [];
+            routeMarkers = [];
+            showToast('RUTA ELIMINADA', 'error');
+            
+            resetRecordButtonState(); 
+        }
+
+        // --- PUNTOS INDIVIDUALES ---
+        function showPointPopup(lat, lng) {
+            const popupContent = `
+                <div class="text-center p-1 font-sans">
+                    <p class="text-sm font-bold text-white mb-3">¿Guardar ubicación?</p>
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="confirmSave(${lat}, ${lng})" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:bg-white hover:scale-105 transition-all shadow-[0_0_10px_rgba(175,255,26,0.3)]">CONFIRMAR</button>
+                        <button onclick="cancelSave()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10 transition-colors">CANCELAR</button>
+                    </div>
+                </div>
+            `;
+            tempMarker.bindPopup(popupContent).openPopup();
+            tempMarker.on('popupclose', () => {
+                // Solo limpiamos si NO estamos guardando ni hay error pendiente
+                setTimeout(() => { if (tempMarker && !tempMarker.isSaving && !tempMarker.isSaved && !tempMarker.hasError) { map.removeLayer(tempMarker); tempMarker = null; } }, 100);
+            });
+        }
+        
+        window.confirmSave = function(lat, lng) {
+            if (!tempMarker) return;
+            tempMarker.isSaving = true;
+            tempMarker.hasError = false; 
+            tempMarker.closePopup();
+            tempMarker.setIcon(iconLoading);
+            showToast('GUARDANDO PUNTO...', 'loading');
+            
+            simulateNetworkRequest()
+                .then(() => {
+                    // ÉXITO
+                    if (!tempMarker) return;
+                    tempMarker.isSaving = false;
+                    tempMarker.isSaved = true;
+                    tempMarker.setIcon(iconSaved);
+                    tempMarker.unbindPopup();
+                    tempMarker.bindPopup(`<div class="text-center"><h3 class="font-bold text-[#afff1a]">PUNTO GUARDADO</h3></div>`);
+                    showToast('UBICACIÓN GUARDADA', 'success');
+                    tempMarker = null; // Ya es permanente
+                })
+                .catch(() => {
+                    // ERROR
+                    if (!tempMarker) return;
+                    tempMarker.isSaving = false;
+                    tempMarker.hasError = true;
+                    tempMarker.setIcon(iconError); // Icono rojo de error
+                    showToast('ERROR AL GUARDAR', 'error');
+                    
+                    // Reabrir popup para reintentar
+                    setTimeout(() => {
+                        tempMarker.bindPopup(`
+                            <div class="text-center p-1 font-sans">
+                                <p class="text-sm font-bold text-red-500 mb-2">¡Error de conexión!</p>
+                                <button onclick="confirmSave(${lat}, ${lng})" class="bg-white text-black text-xs font-bold px-3 py-2 rounded shadow">REINTENTAR</button>
+                            </div>
+                        `).openPopup();
+                    }, 500);
+                });
+        };
+        
+        window.cancelSave = function() {
+            if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+        };
+
+        function activatePointMode() {
+            if (isRecording) { showToast('DETÉN LA GRABACIÓN PRIMERO', 'error'); return; }
+            showToast('HAZ CLIC EN EL MAPA PARA AGREGAR', 'success');
+        }
+
+        // --- TOAST ---
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            toastText.innerText = msg;
+            
+            // Reset clases
+            toastIcon.className = '';
+            toast.className = "absolute bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(175,255,26,0.2)] transition-all duration-500 translate-y-20 opacity-0 transform";
+
+            if (type === 'loading') {
+                toastIcon.className = 'fas fa-circle-notch fa-spin text-[#afff1a]';
+                toast.classList.add('border-[#afff1a]/50');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            } else if (type === 'success') {
+                toastIcon.className = 'fas fa-check-circle text-[#afff1a]';
+                toast.classList.add('border-[#afff1a]');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+            } else if (type === 'error') {
+                toastIcon.className = 'fas fa-wifi text-red-500';
+                toast.classList.add('border-red-500');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+            }
+        }
+
+        L.marker(TIJUANA_COORDS, { icon: iconSaved }).addTo(map).bindPopup('<div class="text-center"><h3 class="font-bold text-[#afff1a]">INICIO</h3></div>');
     </script>
 </body>
 </html>
