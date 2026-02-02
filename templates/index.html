@@ -18,26 +18,37 @@
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
         
         :root {
-            --primary: #afff1a; /* Lima Neón */
+            /* Colores de Sistema UI */
+            --primary: #afff1a; /* Lima Neón (Interfaz - Botones/Acciones) */
             --bg-dark: #060905; /* Negro Bosque */
             --glass-border: rgba(175, 255, 26, 0.2);
+            
+            /* Colores de Mapa (Datos Guardados) */
+            --map-marker: #00f3ff; /* Azul Neón (Cyan) */
+            --map-marker-glow: rgba(0, 243, 255, 0.4);
         }
 
         body {
             font-family: 'Bricolage Grotesque', sans-serif;
             background-color: var(--bg-dark);
             color: #e2e8f0;
-            overflow: hidden; /* Evitar scroll en modo app */
+            overflow: hidden;
         }
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
         .glass-panel {
-            background: rgba(14, 20, 13, 0.7);
+            background: rgba(14, 20, 13, 0.8);
             backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
         }
 
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0e140d; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* Mapa Invertido */
         .leaflet-layer,
         .leaflet-control-zoom-in,
         .leaflet-control-zoom-out,
@@ -48,8 +59,12 @@
         .leaflet-control-zoom {
             border: none !important;
             box-shadow: none !important;
-            margin-bottom: 30px !important;
+            margin-bottom: 80px !important;
             margin-right: 20px !important;
+        }
+        
+        @media (min-width: 768px) {
+            .leaflet-control-zoom { margin-bottom: 30px !important; }
         }
         
         .leaflet-control-zoom a {
@@ -66,9 +81,7 @@
             transition: transform 0.1s;
         }
 
-        .leaflet-control-zoom a:active {
-            transform: scale(0.9);
-        }
+        .leaflet-control-zoom a:active { transform: scale(0.9); }
 
         .leaflet-popup-content-wrapper, .leaflet-popup-tip {
             background: #0e140d !important;
@@ -77,17 +90,17 @@
             border-radius: 12px !important;
         }
 
-        .leaflet-popup-close-button {
-            color: white !important;
-        }
+        .leaflet-popup-close-button { color: white !important; }
 
+        /* MARCADOR DE ALTA VISIBILIDAD (AZUL NEÓN) */
         .pulse-marker {
             display: block;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: var(--primary);
-            box-shadow: 0 0 0 rgba(175, 255, 26, 0.4);
+            background: var(--map-marker); 
+            border: 2px solid white; /* Anillo interior blanco para contraste */
+            box-shadow: 0 0 0 1px black, 0 0 15px var(--map-marker-glow);
             animation: pulse 2s infinite;
         }
 
@@ -96,12 +109,12 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #94a3b8;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            background: #cbd5e1; /* Gris claro */
+            border: 2px solid black;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: bounce 1s infinite;
         }
 
-        /* Marcador de Error (Rojo) */
         .error-marker {
             display: block;
             width: 20px;
@@ -114,20 +127,20 @@
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(175, 255, 26, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(175, 255, 26, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(175, 255, 26, 0); }
+            0% { box-shadow: 0 0 0 0 var(--map-marker-glow); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 243, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 243, 255, 0); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
-        }
-
-        .toast-enter {
-            transform: translate(-50%, 0) !important;
-            opacity: 1 !important;
         }
 
         .recording-active {
@@ -142,21 +155,26 @@
             pointer-events: none;
             filter: grayscale(100%);
         }
-        
-        .fade-in-up {
-            animation: fadeInUp 0.3s ease-out forwards;
+
+        .list-item {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        .list-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-left-color: var(--primary);
         }
         
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        .fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
     <!-- Navegación -->
-    <nav class="w-full z-50 p-4 border-b border-white/10 bg-[#060905]/90 backdrop-blur">
+    <nav class="w-full z-50 p-4 border-b border-white/10 bg-[#060905]/90 backdrop-blur flex-shrink-0">
         <div class="max-w-full mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <a href="index.html" class="flex items-center gap-2 group">
@@ -168,7 +186,7 @@
             </div>
             
             <div class="hidden md:flex flex-1 max-w-lg mx-8 relative">
-                <input type="text" placeholder="BUSCAR COORDENADAS O RUTA..." 
+                <input type="text" aria-label="Buscar lugar" placeholder="BUSCAR COORDENADAS O RUTA..." 
                        class="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-4 text-sm mono text-[#afff1a] focus:outline-none focus:border-[#afff1a] placeholder-slate-600 transition-colors">
                 <i class="fas fa-search absolute right-3 top-3.5 text-slate-500"></i>
             </div>
@@ -188,45 +206,87 @@
         </div>
     </nav>
 
-    <!-- Mapa -->
-    <main class="flex-1 relative w-full h-full">
-        <div id="map" class="w-full h-full z-0 bg-[#1a1a1a] cursor-crosshair"></div>
+    <!-- Contenedor Principal -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Pestaña 1: MAPA -->
+        <section id="tab-map" class="w-full md:w-3/4 h-full relative flex flex-col transition-all duration-300">
+            <div id="map" class="flex-1 bg-[#1a1a1a] cursor-crosshair z-0"></div>
 
-        <!-- Toast -->
-        <div id="toast" class="absolute bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border border-[#afff1a]/50 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(175,255,26,0.2)] transition-all duration-500 translate-y-20 opacity-0 transform">
-            <i id="toast-icon" class="fas fa-circle-notch fa-spin text-[#afff1a]"></i>
-            <span id="toast-text" class="text-sm font-bold mono tracking-wide">PROCESANDO...</span>
-        </div>
+            <!-- Botones de Acción -->
+            <div class="absolute bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[1000] flex gap-4 items-center w-full justify-center px-4 pointer-events-none">
+                
+                <button id="btn-undo" onclick="event.stopPropagation(); undoLastPoint()" 
+                    aria-label="Deshacer último punto"
+                    class="hidden pointer-events-auto glass-panel px-4 py-4 rounded-full text-white border-2 border-transparent hover:border-red-500 hover:text-red-500 transition-all flex items-center gap-2 shadow-lg backdrop-blur-xl"
+                    title="Deshacer último punto">
+                    <i class="fas fa-undo"></i>
+                    <span class="font-bold text-xs hidden sm:inline">DESHACER</span>
+                </button>
 
-        <!-- Botones de Acción - Z-Index 1000 para estar siempre encima -->
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1000] flex gap-4 items-center w-full justify-center px-4">
+                <button id="btn-record" onclick="event.stopPropagation(); toggleRecording()" 
+                    aria-label="Grabar ruta"
+                    class="pointer-events-auto glass-panel px-6 py-4 rounded-full text-white border-2 border-transparent hover:border-[#afff1a] hover:text-[#afff1a] transition-all flex items-center gap-3 group active:scale-95 shadow-lg backdrop-blur-xl">
+                    <i id="icon-record" class="fas fa-record-vinyl text-red-500 text-xl group-hover:animate-pulse"></i>
+                    <span id="lbl-record" class="font-extrabold text-base tracking-wide hidden sm:inline">GRABAR</span>
+                </button>
+                
+                <button id="btn-new-point" onclick="event.stopPropagation(); activatePointMode()" 
+                    aria-label="Añadir nuevo punto"
+                    class="pointer-events-auto bg-[#afff1a] text-black px-8 py-5 rounded-full font-black text-lg hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_30px_rgba(175,255,26,0.5)] flex items-center gap-3 border-2 border-black">
+                    <i class="fas fa-plus text-xl"></i> 
+                    <span>PUNTO</span>
+                </button>
+            </div>
+
+            <!-- Toast -->
+            <div id="toast" class="absolute bottom-40 md:bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border border-[#afff1a]/50 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(175,255,26,0.2)] transition-all duration-500 translate-y-20 opacity-0 transform pointer-events-none">
+                <i id="toast-icon" class="fas fa-circle-notch fa-spin text-[#afff1a]"></i>
+                <span id="toast-text" class="text-sm font-bold mono tracking-wide">PROCESANDO...</span>
+            </div>
+        </section>
+
+        <!-- Pestaña 2: LISTA -->
+        <section id="tab-list" class="hidden md:flex w-full md:w-1/4 h-full bg-[#0a0f0a] border-l border-white/10 flex-col z-20">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-[#060905]">
+                <h2 class="text-[#afff1a] font-bold text-lg uppercase tracking-tight">Lugares Guardados</h2>
+                <span id="places-count" class="text-xs bg-white/10 px-2 py-1 rounded mono text-slate-400">0</span>
+            </div>
             
-            <button id="btn-undo" onclick="event.stopPropagation(); undoLastPoint()" 
-                class="hidden glass-panel px-4 py-4 rounded-full text-white border-2 border-transparent hover:border-red-500 hover:text-red-500 transition-all flex items-center gap-2 shadow-lg backdrop-blur-xl fade-in-up"
-                title="Deshacer último punto">
-                <i class="fas fa-undo"></i>
-                <span class="font-bold text-xs hidden sm:inline">DESHACER</span>
-            </button>
-
-            <button id="btn-record" onclick="event.stopPropagation(); toggleRecording()" 
-                class="glass-panel px-8 py-4 rounded-full text-white border-2 border-transparent hover:border-[#afff1a] hover:text-[#afff1a] transition-all flex items-center gap-3 group active:scale-95 shadow-lg backdrop-blur-xl">
-                <i id="icon-record" class="fas fa-record-vinyl text-red-500 text-xl group-hover:animate-pulse"></i>
-                <span id="lbl-record" class="font-extrabold text-base tracking-wide">GRABAR</span>
-            </button>
+            <div id="places-list" class="flex-1 overflow-y-auto custom-scroll p-2 space-y-2">
+                <div id="empty-state" class="text-center py-10 opacity-50">
+                    <i class="fas fa-map-marked-alt text-4xl mb-4 text-slate-600"></i>
+                    <p class="text-sm text-slate-500">No hay puntos guardados.<br>Explora el mapa para añadir.</p>
+                </div>
+            </div>
             
-            <button id="btn-new-point" onclick="event.stopPropagation(); activatePointMode()" 
-                class="bg-[#afff1a] text-black px-10 py-5 rounded-full font-black text-lg hover:scale-105 active:scale-95 transition-all duration-200 shadow-[0_0_30px_rgba(175,255,26,0.5)] flex items-center gap-3 border-2 border-black">
-                <i class="fas fa-plus text-xl"></i> 
-                <span>NUEVO PUNTO</span>
-            </button>
-        </div>
+            <div class="p-4 border-t border-white/10 bg-[#060905]">
+                <button class="w-full border border-white/20 text-slate-400 py-2 rounded hover:bg-white/5 hover:text-white transition-colors text-xs font-bold uppercase" aria-label="Exportar datos">
+                    <i class="fas fa-download mr-2"></i> Exportar GPX
+                </button>
+            </div>
+        </section>
+
     </main>
+
+    <!-- Barra Móvil -->
+    <div class="md:hidden w-full bg-[#060905] border-t border-white/10 flex justify-around p-2 z-50">
+        <button onclick="switchTab('map')" id="nav-map" class="flex-1 py-3 text-[#afff1a] flex flex-col items-center gap-1 transition-colors" aria-label="Ver Mapa">
+            <i class="fas fa-map text-lg"></i>
+            <span class="text-[10px] font-bold tracking-widest">MAPA</span>
+        </button>
+        <button onclick="switchTab('list')" id="nav-list" class="flex-1 py-3 text-slate-500 flex flex-col items-center gap-1 transition-colors" aria-label="Ver Lista de Lugares">
+            <i class="fas fa-list text-lg"></i>
+            <span class="text-[10px] font-bold tracking-widest">LISTA</span>
+        </button>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
         const TIJUANA_COORDS = [32.5149, -117.0382];
+        const HIGH_CONTRAST_COLOR = '#00f3ff'; // Azul Neón (Cyan)
 
         const map = L.map('map', {
             zoomControl: false, 
@@ -239,87 +299,153 @@
         }).addTo(map);
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
+        
+        setTimeout(() => {
+            const zoomInBtn = document.querySelector('.leaflet-control-zoom-in');
+            const zoomOutBtn = document.querySelector('.leaflet-control-zoom-out');
+            if(zoomInBtn) zoomInBtn.setAttribute('aria-label', 'Acercar mapa');
+            if(zoomOutBtn) zoomOutBtn.setAttribute('aria-label', 'Alejar mapa');
+        }, 500);
 
-        // Variables de Estado
+        // Variables Globales
         let tempMarker = null;
         let isRecording = false; 
         let routePolyline = null;
         let routePath = []; 
         let routeMarkers = []; 
         let ghostLine = null;
-        let activeRoutePopup = null; 
+        let activeRoutePopup = null;
+        let savedPoints = [];
 
         // Iconos
-        const iconSaved = L.divIcon({ className: 'custom-div-icon', html: "<div class='pulse-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
+        const iconSaved = L.divIcon({ className: 'custom-div-icon', html: "<div class='pulse-marker'></div>", iconSize: [22, 22], iconAnchor: [11, 11] });
         const iconTemp = L.divIcon({ className: 'custom-div-icon', html: "<div class='temp-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
         const iconError = L.divIcon({ className: 'custom-div-icon', html: "<div class='error-marker'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
         const iconLoading = L.divIcon({ className: 'custom-div-icon', html: "<div class='animate-spin h-6 w-6 border-4 border-[#afff1a] border-t-transparent rounded-full'></div>", iconSize: [24, 24], iconAnchor: [12, 12] });
 
-        // --- SIMULACIÓN DE API ---
+        // --- SISTEMA DE PESTAÑAS ---
+        function switchTab(tab) {
+            const mapSection = document.getElementById('tab-map');
+            const listSection = document.getElementById('tab-list');
+            const navMap = document.getElementById('nav-map');
+            const navList = document.getElementById('nav-list');
+
+            if (tab === 'map') {
+                mapSection.classList.remove('hidden');
+                listSection.classList.add('hidden');
+                listSection.classList.remove('flex');
+                navMap.classList.add('text-[#afff1a]'); navMap.classList.remove('text-slate-500');
+                navList.classList.add('text-slate-500'); navList.classList.remove('text-[#afff1a]');
+                setTimeout(() => map.invalidateSize(), 100);
+            } else {
+                mapSection.classList.add('hidden');
+                listSection.classList.remove('hidden');
+                listSection.classList.add('flex');
+                navList.classList.add('text-[#afff1a]'); navList.classList.remove('text-slate-500');
+                navMap.classList.add('text-slate-500'); navMap.classList.remove('text-[#afff1a]');
+            }
+        }
+
+        // --- SIMULACIÓN RED ---
         function simulateNetworkRequest() {
             return new Promise((resolve, reject) => {
-                const isSuccess = Math.random() > 0.5; // 50% de probabilidad de error
+                const isSuccess = Math.random() > 0.3; 
                 setTimeout(() => {
                     if (isSuccess) resolve({ status: 'success' });
                     else reject({ status: 'error', message: 'Sin conexión' });
-                }, 1500);
+                }, 1000);
             });
         }
 
-        // Movimiento del Mouse (Rubber Banding)
+        // --- LISTA DE LUGARES ---
+        function addPlaceToList(type, coords, id) {
+            const listContainer = document.getElementById('places-list');
+            const emptyState = document.getElementById('empty-state');
+            const countBadge = document.getElementById('places-count');
+            
+            if (emptyState) emptyState.style.display = 'none';
+
+            const lat = coords.lat.toFixed(4);
+            const lng = coords.lng.toFixed(4);
+            const title = type === 'point' ? `Punto Táctico ${savedPoints.length + 1}` : `Ruta Exploración ${savedPoints.length + 1}`;
+            // Iconos actualizados a Azul Neón en la lista
+            const iconClass = type === 'point' ? 'fa-map-marker-alt text-[#00f3ff]' : 'fa-route text-[#00f3ff]';
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'list-item p-3 bg-white/5 rounded-lg cursor-pointer group animate-fade-in-up';
+            itemDiv.setAttribute('role', 'button');
+            itemDiv.setAttribute('aria-label', `Ir a ${title}`);
+            itemDiv.onclick = () => flyToLocation(coords, itemDiv);
+            
+            itemDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="mt-1"><i class="fas ${iconClass}"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-white font-bold text-sm truncate group-hover:text-[#afff1a] transition-colors">${title}</h4>
+                        <p class="text-slate-500 text-xs font-mono mt-1">LAT: ${lat}<br>LNG: ${lng}</p>
+                    </div>
+                    <button class="text-slate-600 hover:text-red-500 p-1" onclick="event.stopPropagation(); deleteItem('${id}', this)" aria-label="Eliminar">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </div>
+            `;
+
+            listContainer.prepend(itemDiv);
+            savedPoints.push({ id, coords, type });
+            countBadge.innerText = savedPoints.length;
+        }
+
+        function flyToLocation(coords, element) {
+            const listSection = document.getElementById('tab-list');
+            if (!listSection.classList.contains('hidden') && window.innerWidth < 768) {
+                switchTab('map');
+            }
+            map.flyTo([coords.lat, coords.lng], 16, { animate: true, duration: 1.5 });
+            document.querySelectorAll('.list-item').forEach(el => el.classList.remove('bg-white/10', 'border-l-[#afff1a]'));
+            element.classList.add('bg-white/10');
+        }
+
+        function deleteItem(id, btnElement) {
+            const item = btnElement.closest('.list-item');
+            item.remove();
+            savedPoints = savedPoints.filter(p => p.id !== id);
+            document.getElementById('places-count').innerText = savedPoints.length;
+            if (savedPoints.length === 0) document.getElementById('empty-state').style.display = 'block';
+        }
+
+        // --- INTERACCIONES MAPA ---
         map.on('mousemove', function(e) {
             if (isRecording && routePath.length > 0) {
                 const lastPoint = routePath[routePath.length - 1];
                 const currentMousePos = e.latlng;
-
                 if (!ghostLine) {
-                    ghostLine = L.polyline([lastPoint, currentMousePos], {
-                        color: '#afff1a',
-                        weight: 2,
-                        opacity: 0.5,
-                        dashArray: '5, 10',
-                        interactive: false 
-                    }).addTo(map);
+                    ghostLine = L.polyline([lastPoint, currentMousePos], { color: HIGH_CONTRAST_COLOR, weight: 2, opacity: 0.5, dashArray: '5, 10', interactive: false }).addTo(map);
                 } else {
                     ghostLine.setLatLngs([lastPoint, currentMousePos]);
                 }
             }
         });
 
-        // Click en Mapa
         map.on('click', function(e) {
             const { lat, lng } = e.latlng;
-
             if (isRecording) {
                 routePath.push([lat, lng]);
-
                 if (!routePolyline) {
-                    routePolyline = L.polyline(routePath, {
-                        color: '#afff1a',
-                        weight: 4,
-                        opacity: 1,
-                        lineCap: 'round',
-                        lineJoin: 'round',
-                        interactive: false 
-                    }).addTo(map);
+                    // Ruta Azul Neón
+                    routePolyline = L.polyline(routePath, { color: HIGH_CONTRAST_COLOR, weight: 4, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map);
                 } else {
                     routePolyline.setLatLngs(routePath);
                 }
-
-                const dot = L.circleMarker([lat, lng], {
-                    radius: 4, color: '#000', weight: 1, fillColor: '#afff1a', fillOpacity: 1, interactive: false 
-                }).addTo(map);
+                const dot = L.circleMarker([lat, lng], { radius: 4, color: '#000', weight: 1, fillColor: HIGH_CONTRAST_COLOR, fillOpacity: 1, interactive: false }).addTo(map);
                 routeMarkers.push(dot);
                 return; 
             }
-
             if (tempMarker) map.removeLayer(tempMarker);
             tempMarker = L.marker([lat, lng], { icon: iconTemp }).addTo(map);
             showPointPopup(lat, lng);
         });
 
-        // --- FUNCIONES DE GRABACIÓN ---
-
+        // --- GRABAR RUTA ---
         function toggleRecording() {
             const btn = document.getElementById('btn-record');
             const label = document.getElementById('lbl-record');
@@ -327,91 +453,51 @@
             const btnUndo = document.getElementById('btn-undo');
 
             if (!isRecording) {
-                // INICIAR
                 isRecording = true;
-                routePath = []; 
-                routeMarkers.forEach(m => map.removeLayer(m));
+                routePath = []; routeMarkers.forEach(m => map.removeLayer(m));
                 if (routePolyline) map.removeLayer(routePolyline);
-                routePolyline = null;
-                routeMarkers = [];
-
+                routePolyline = null; routeMarkers = [];
                 btn.classList.add('recording-active');
                 label.innerText = "TERMINAR";
-                icon.classList.remove('text-red-500'); 
-                icon.classList.add('text-white', 'animate-ping');
+                icon.classList.remove('text-red-500'); icon.classList.add('text-white', 'animate-ping');
                 btnUndo.classList.remove('hidden');
-
-                showToast('GRABANDO: CLIC PARA TRAZAR', 'loading');
+                showToast('GRABANDO...', 'loading');
                 if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-
             } else {
-                // DETENER
-                if (routePath.length < 2) {
-                    showToast('ERROR: RUTA MUY CORTA', 'error');
-                    cancelRoute();
-                    return;
-                }
-                
+                if (routePath.length < 2) { showToast('ERROR: RUTA CORTA', 'error'); cancelRoute(); return; }
                 isRecording = false; 
                 if (ghostLine) { map.removeLayer(ghostLine); ghostLine = null; }
-
-                btn.classList.remove('recording-active');
-                btn.classList.add('btn-disabled'); 
-                label.innerText = "ESPERANDO...";
-                icon.classList.remove('animate-ping');
-                btnUndo.classList.add('hidden');
-
+                btn.classList.remove('recording-active'); btn.classList.add('btn-disabled'); 
+                label.innerText = "ESPERANDO..."; icon.classList.remove('animate-ping'); btnUndo.classList.add('hidden');
                 showRouteConfirmPopup();
             }
         }
 
         function showRouteConfirmPopup() {
             const lastPoint = routePath[routePath.length - 1];
-            const popupContent = `
+            activeRoutePopup = L.popup().setLatLng(lastPoint).setContent(`
                 <div class="text-center p-1 font-sans">
                     <p class="text-sm font-bold text-white mb-3">¿Guardar Ruta?</p>
                     <div class="flex gap-2 justify-center">
-                        <button onclick="confirmRouteSave()" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:bg-white hover:scale-105 transition-all shadow-[0_0_10px_rgba(175,255,26,0.3)]">GUARDAR</button>
-                        <button onclick="cancelRoute()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10 transition-colors">BORRAR</button>
+                        <button onclick="confirmRouteSave()" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:scale-105">GUARDAR</button>
+                        <button onclick="cancelRoute()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10">BORRAR</button>
                     </div>
                 </div>
-            `;
-
-            activeRoutePopup = L.popup()
-                .setLatLng(lastPoint)
-                .setContent(popupContent)
-                .openOn(map);
-
-            activeRoutePopup.on('remove', function() {
-                setTimeout(() => {
-                    // Si no estamos grabando y la ruta sigue ahí (no confirmada ni borrada)
-                    // Permitimos reabrir el popup o reintentar
-                    if(routePolyline) { 
-                        // El botón sigue disabled si no hacemos nada, asi que lo reseteamos si se cerró "a la mala"
-                        // Pero idealmente queremos que el usuario decida.
-                        // Para esta demo, si cierran el popup, asumimos que quieren pensar, habilitamos el botón de nuevo.
-                        resetRecordButtonState();
-                    }
-                }, 100);
-            });
+            `).openOn(map);
+            activeRoutePopup.on('remove', function() { setTimeout(() => { if(routePolyline) resetRecordButtonState(); }, 100); });
         }
 
         function resetRecordButtonState() {
             const btn = document.getElementById('btn-record');
             const label = document.getElementById('lbl-record');
             const icon = document.getElementById('icon-record');
-            
-            btn.classList.remove('btn-disabled'); 
-            btn.classList.remove('recording-active');
-            label.innerText = "GRABAR";
-            icon.classList.remove('text-white', 'animate-ping');
-            icon.classList.add('text-red-500');
+            btn.classList.remove('btn-disabled'); btn.classList.remove('recording-active');
+            label.innerText = "GRABAR"; icon.classList.remove('text-white', 'animate-ping'); icon.classList.add('text-red-500');
         }
 
         function undoLastPoint() {
             if (!isRecording || routePath.length === 0) return;
-            routePath.pop();
-            const lastMarker = routeMarkers.pop();
+            routePath.pop(); const lastMarker = routeMarkers.pop();
             if (lastMarker) map.removeLayer(lastMarker);
             if (routePolyline) routePolyline.setLatLngs(routePath);
             if (routePath.length === 0 && ghostLine) { map.removeLayer(ghostLine); ghostLine = null; }
@@ -419,140 +505,99 @@
 
         function confirmRouteSave() {
             if(activeRoutePopup) { map.closePopup(); activeRoutePopup = null; }
-            
-            if (routePolyline) routePolyline.setStyle({ color: '#94a3b8', dashArray: '5, 10' }); // Estado "Cargando"
-            showToast('GUARDANDO RUTA...', 'loading');
+            if (routePolyline) routePolyline.setStyle({ color: '#94a3b8', dashArray: '5, 10' });
+            showToast('GUARDANDO...', 'loading');
 
-            simulateNetworkRequest()
-                .then(() => {
-                    // ÉXITO
-                    if (routePolyline) routePolyline.setStyle({ color: '#afff1a', opacity: 1, weight: 5, dashArray: null });
-                    showToast('RUTA GUARDADA', 'success');
-                    if (routePath.length > 0) {
-                        L.popup().setLatLng(routePath[Math.floor(routePath.length / 2)]).setContent('<div class="text-center"><h3 class="font-bold text-[#afff1a]">NUEVA RUTA</h3><div class="text-[10px] mono">SINCRONIZADA</div></div>').openOn(map);
-                    }
-                    resetRecordButtonState();
-                })
-                .catch(() => {
-                    // ERROR
-                    if (routePolyline) routePolyline.setStyle({ color: '#ef4444', dashArray: '5, 5' }); // Estado "Error" (Rojo punteado)
-                    showToast('ERROR DE RED: REINTENTAR', 'error');
-                    
-                    // REABRIR POPUP PARA REINTENTAR
-                    setTimeout(() => {
-                         showRouteConfirmPopup();
-                    }, 1000);
-                });
+            simulateNetworkRequest().then(() => {
+                if (routePolyline) routePolyline.setStyle({ color: HIGH_CONTRAST_COLOR, opacity: 1, weight: 5, dashArray: null });
+                showToast('RUTA GUARDADA', 'success');
+                const centerIdx = Math.floor(routePath.length / 2);
+                const centerPt = routePath[centerIdx];
+                addPlaceToList('route', { lat: centerPt[0], lng: centerPt[1] }, Date.now().toString());
+                resetRecordButtonState();
+            }).catch(() => {
+                if (routePolyline) routePolyline.setStyle({ color: '#ef4444', dashArray: '5, 5' });
+                showToast('ERROR DE RED', 'error');
+                setTimeout(() => showRouteConfirmPopup(), 1000);
+            });
         }
 
         function cancelRoute() {
             if(activeRoutePopup) { map.closePopup(); activeRoutePopup = null; }
-            
             if (routePolyline) map.removeLayer(routePolyline);
             routeMarkers.forEach(m => map.removeLayer(m));
-            routePath = [];
-            routeMarkers = [];
+            routePath = []; routeMarkers = [];
             showToast('RUTA ELIMINADA', 'error');
-            
             resetRecordButtonState(); 
         }
 
         // --- PUNTOS INDIVIDUALES ---
         function showPointPopup(lat, lng) {
-            const popupContent = `
+            tempMarker.bindPopup(`
                 <div class="text-center p-1 font-sans">
-                    <p class="text-sm font-bold text-white mb-3">¿Guardar ubicación?</p>
+                    <p class="text-sm font-bold text-white mb-3">¿Guardar?</p>
                     <div class="flex gap-2 justify-center">
-                        <button onclick="confirmSave(${lat}, ${lng})" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:bg-white hover:scale-105 transition-all shadow-[0_0_10px_rgba(175,255,26,0.3)]">CONFIRMAR</button>
-                        <button onclick="cancelSave()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10 transition-colors">CANCELAR</button>
+                        <button onclick="confirmSave(${lat}, ${lng})" class="bg-[#afff1a] text-black text-xs font-bold px-3 py-2 rounded hover:scale-105">SI</button>
+                        <button onclick="cancelSave()" class="border border-white/30 text-white text-xs font-bold px-3 py-2 rounded hover:bg-white/10">NO</button>
                     </div>
                 </div>
-            `;
-            tempMarker.bindPopup(popupContent).openPopup();
-            tempMarker.on('popupclose', () => {
-                // Solo limpiamos si NO estamos guardando ni hay error pendiente
-                setTimeout(() => { if (tempMarker && !tempMarker.isSaving && !tempMarker.isSaved && !tempMarker.hasError) { map.removeLayer(tempMarker); tempMarker = null; } }, 100);
-            });
+            `).openPopup();
+            tempMarker.on('popupclose', () => { setTimeout(() => { if (tempMarker && !tempMarker.isSaving && !tempMarker.isSaved && !tempMarker.hasError) { map.removeLayer(tempMarker); tempMarker = null; } }, 100); });
         }
         
         window.confirmSave = function(lat, lng) {
             if (!tempMarker) return;
-            tempMarker.isSaving = true;
-            tempMarker.hasError = false; 
-            tempMarker.closePopup();
-            tempMarker.setIcon(iconLoading);
-            showToast('GUARDANDO PUNTO...', 'loading');
+            tempMarker.isSaving = true; tempMarker.hasError = false; 
+            tempMarker.closePopup(); tempMarker.setIcon(iconLoading);
+            showToast('GUARDANDO...', 'loading');
             
-            simulateNetworkRequest()
-                .then(() => {
-                    // ÉXITO
-                    if (!tempMarker) return;
-                    tempMarker.isSaving = false;
-                    tempMarker.isSaved = true;
-                    tempMarker.setIcon(iconSaved);
-                    tempMarker.unbindPopup();
-                    tempMarker.bindPopup(`<div class="text-center"><h3 class="font-bold text-[#afff1a]">PUNTO GUARDADO</h3></div>`);
-                    showToast('UBICACIÓN GUARDADA', 'success');
-                    tempMarker = null; // Ya es permanente
-                })
-                .catch(() => {
-                    // ERROR
-                    if (!tempMarker) return;
-                    tempMarker.isSaving = false;
-                    tempMarker.hasError = true;
-                    tempMarker.setIcon(iconError); // Icono rojo de error
-                    showToast('ERROR AL GUARDAR', 'error');
-                    
-                    // Reabrir popup para reintentar
-                    setTimeout(() => {
-                        tempMarker.bindPopup(`
-                            <div class="text-center p-1 font-sans">
-                                <p class="text-sm font-bold text-red-500 mb-2">¡Error de conexión!</p>
-                                <button onclick="confirmSave(${lat}, ${lng})" class="bg-white text-black text-xs font-bold px-3 py-2 rounded shadow">REINTENTAR</button>
-                            </div>
-                        `).openPopup();
-                    }, 500);
-                });
+            simulateNetworkRequest().then(() => {
+                if (!tempMarker) return;
+                tempMarker.isSaving = false; tempMarker.isSaved = true;
+                tempMarker.setIcon(iconSaved); tempMarker.unbindPopup();
+                tempMarker.bindPopup(`<div class="text-center"><h3 class="font-bold text-[#00f3ff]">GUARDADO</h3></div>`);
+                showToast('ÉXITO', 'success');
+                addPlaceToList('point', { lat: lat, lng: lng }, Date.now().toString());
+                tempMarker = null;
+            }).catch(() => {
+                if (!tempMarker) return;
+                tempMarker.isSaving = false; tempMarker.hasError = true; tempMarker.setIcon(iconError);
+                showToast('ERROR', 'error');
+                setTimeout(() => { tempMarker.bindPopup(`<div class="text-center p-1"><p class="text-red-500 mb-2">Error!</p><button onclick="confirmSave(${lat}, ${lng})" class="bg-white text-black px-2 py-1 rounded">REINTENTAR</button></div>`).openPopup(); }, 500);
+            });
         };
         
-        window.cancelSave = function() {
-            if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
-        };
+        window.cancelSave = function() { if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; } };
 
         function activatePointMode() {
-            if (isRecording) { showToast('DETÉN LA GRABACIÓN PRIMERO', 'error'); return; }
-            showToast('HAZ CLIC EN EL MAPA PARA AGREGAR', 'success');
+            if (isRecording) { showToast('TERMINA GRABACIÓN', 'error'); return; }
+            showToast('CLIC EN MAPA', 'success');
         }
 
-        // --- TOAST ---
         function showToast(msg, type) {
             const toast = document.getElementById('toast');
             const toastText = document.getElementById('toast-text');
             const toastIcon = document.getElementById('toast-icon');
             toastText.innerText = msg;
-            
-            // Reset clases
             toastIcon.className = '';
-            toast.className = "absolute bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(175,255,26,0.2)] transition-all duration-500 translate-y-20 opacity-0 transform";
+            toast.className = "absolute bottom-40 md:bottom-32 left-1/2 -translate-x-1/2 z-[1000] bg-[#0e140d] border text-white px-6 py-3 rounded-full flex items-center gap-3 shadow transition-all duration-500 translate-y-20 opacity-0 transform pointer-events-none";
 
             if (type === 'loading') {
                 toastIcon.className = 'fas fa-circle-notch fa-spin text-[#afff1a]';
-                toast.classList.add('border-[#afff1a]/50');
-                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('border-[#afff1a]/50'); toast.classList.remove('translate-y-20', 'opacity-0');
             } else if (type === 'success') {
                 toastIcon.className = 'fas fa-check-circle text-[#afff1a]';
-                toast.classList.add('border-[#afff1a]');
-                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('border-[#afff1a]'); toast.classList.remove('translate-y-20', 'opacity-0');
                 setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
             } else if (type === 'error') {
                 toastIcon.className = 'fas fa-wifi text-red-500';
-                toast.classList.add('border-red-500');
-                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('border-red-500'); toast.classList.remove('translate-y-20', 'opacity-0');
                 setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
             }
         }
 
-        L.marker(TIJUANA_COORDS, { icon: iconSaved }).addTo(map).bindPopup('<div class="text-center"><h3 class="font-bold text-[#afff1a]">INICIO</h3></div>');
+        // Marker inicial
+        L.marker(TIJUANA_COORDS, { icon: iconSaved }).addTo(map).bindPopup('<div class="text-center"><h3 class="font-bold text-[#00f3ff]">INICIO</h3></div>');
     </script>
 </body>
 </html>
